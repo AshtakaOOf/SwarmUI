@@ -3103,6 +3103,45 @@ public partial class WorkflowGenerator
         return result;
     }
 
+    /// <summary>Runs an image through an upscale model (eg 1x artifact-cleanup model for vae), scales content the same way as Refiner upscale. Has a check to only run on images.</summary>
+    public WGNodeData CreateUpscaleModelPostProcess(WGNodeData media, WGNodeData vae, string modelName)
+    {
+        int width = media.Width ?? UserInput.GetImageWidth();
+        int height = media.Height ?? UserInput.GetImageHeight();
+        (WGNodeData decoded, JArray alphaMask) = media.AsRawImageNoAlpha(vae); // TODO: Pending comfy fix for alpha compat
+        string loaderNode = CreateNode("UpscaleModelLoader", new JObject()
+        {
+            ["model_name"] = modelName
+        });
+        string upscaledNode = CreateNode("ImageUpscaleWithModel", new JObject()
+        {
+            ["upscale_model"] = NodePath(loaderNode, 0),
+            ["image"] = decoded.Path
+        });
+        JArray upscaledImage = NodePath(upscaledNode, 0);
+        if (alphaMask is not null)
+        {
+            string joined = CreateNode("JoinImageWithAlpha", new JObject()
+            {
+                ["image"] = upscaledImage,
+                ["alpha"] = alphaMask
+            });
+            upscaledImage = NodePath(joined, 0);
+        }
+        string scaledNode = CreateNode("ImageScale", new JObject()
+        {
+            ["image"] = upscaledImage,
+            ["width"] = width,
+            ["height"] = height,
+            ["upscale_method"] = "lanczos",
+            ["crop"] = "disabled"
+        });
+        WGNodeData result = decoded.WithPath([scaledNode, 0], mayHaveAlpha: alphaMask is not null ? true : null);
+        result.Width = width;
+        result.Height = height;
+        return result;
+    }
+
     /// <summary>Creates a "CLIPTextEncode" or equivalent node for the given input, applying prompt-given conditioning modifiers as relevant.</summary>
     public JArray CreateConditioning(string prompt, JArray clip, T2IModel model, bool isPositive, string firstId = null, bool isRefiner = false, bool isVideo = false, bool isVideoSwap = false, bool isPixelDecoder = false, JArray attachImages = null, int steps = -1)
     {

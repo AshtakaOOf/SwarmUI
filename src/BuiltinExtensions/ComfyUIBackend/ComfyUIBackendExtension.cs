@@ -611,7 +611,7 @@ public class ComfyUIBackendExtension : Extension
         }
     }
 
-    public static T2IRegisteredParam<string> CustomWorkflowParam, SamplerParam, SchedulerParam, RefinerSamplerParam, RefinerSchedulerParam, RefinerUpscaleMethod, UseIPAdapterForRevision, IPAdapterWeightType, VideoPreviewType, VideoFrameInterpolationMethod, GligenModel, YoloModelInternal, PreferredDType, UseStyleModel, TeaCacheMode, EasyCacheMode, SetClipDevice, ModelAttentionBackend, UseSparseAttention, SeedVRUpscaleMethod, SeedVRColorCorrectionBehavior, EnableReferenceLatents, TextEncodedImage;
+    public static T2IRegisteredParam<string> CustomWorkflowParam, SamplerParam, SchedulerParam, RefinerSamplerParam, RefinerSchedulerParam, RefinerUpscaleMethod, RefinerPostProcessMode, RefinerPostProcessModel, UseIPAdapterForRevision, IPAdapterWeightType, VideoPreviewType, VideoFrameInterpolationMethod, GligenModel, YoloModelInternal, PreferredDType, UseStyleModel, TeaCacheMode, EasyCacheMode, SetClipDevice, ModelAttentionBackend, UseSparseAttention, SeedVRUpscaleMethod, SeedVRColorCorrectionBehavior, EnableReferenceLatents, TextEncodedImage;
 
     public static T2IRegisteredParam<bool> AITemplateParam, DebugRegionalPrompting, ShiftedLatentAverageInit, UseCfgZeroStar, UseTCFG, SeedVRSplitLatent;
 
@@ -784,6 +784,14 @@ public class ComfyUIBackendExtension : Extension
         RefinerUpscaleMethod = T2IParamTypes.Register<string>(new("Refiner Upscale Method", "How to upscale the image, if upscaling is used.",
             "pixel-lanczos", Group: T2IParamTypes.GroupRefiners, OrderPriority: -1, FeatureFlag: "comfyui", ChangeWeight: 1,
             GetValues: (session) => [.. UpscalerModels, .. PidUpscaleModels(session)], DependNonDefault: T2IParamTypes.RefinerUpscale.Type.ID
+            ));
+        RefinerPostProcessMode = T2IParamTypes.Register<string>(new("Refiner Post Process Mode", "Apply an upscaler model during any refiner stage. Useful for removing artifacts.\nOff is the default and does nothing.\nBefore Refiner runs the model before the Refiner upscale even happens.\nAfter Refiner runs the model after the image itself got generated, including segments.\nBoth runs before and after the Refiner.",
+            "off", IgnoreIf: "off", Group: T2IParamTypes.GroupRefiners, OrderPriority: -0.5, FeatureFlag: "comfyui", DoNotPreview: true, ChangeWeight: 1,
+            GetValues: (_) => ["off///Off", "before///Before Refiner", "after///After Refiner", "both///Both"]
+            ));
+        RefinerPostProcessModel = T2IParamTypes.Register<string>(new("Refiner Post Process Model", "1x artifact-removal models are recommended. If the dropdown is left on 'None' the generation will error out.",
+            "None", IgnoreIf: "None", Group: T2IParamTypes.GroupRefiners, OrderPriority: -0.4, FeatureFlag: "comfyui", DoNotPreview: true, ChangeWeight: 1,
+            GetValues: (_) => ["None", .. UpscalerModels.Where(m => m.StartsWith("model-")).Select(m => m.Before("///").After("model-"))], DependNonDefault: RefinerPostProcessMode.Type.ID
             ));
         PixelDecoderModel = T2IParamTypes.Register<T2IModel>(new("Pixel Decoder Model", "Optionally use a PiD (Pixel Diffusion Decoder) model.",
             "", Toggleable: true, FeatureFlag: "comfyui", Group: T2IParamTypes.GroupAdvancedModelAddons, IsAdvanced: true, Subtype: "Stable-Diffusion", ChangeWeight: 4, DoNotPreview: true, OrderPriority: 14,

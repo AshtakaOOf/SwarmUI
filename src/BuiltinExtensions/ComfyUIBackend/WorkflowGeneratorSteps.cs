@@ -1505,6 +1505,49 @@ public class WorkflowGeneratorSteps
             return imgIn;
         }
         #endregion
+        #region Refiner Post Process
+        string getRefinerPostProcessModel(WorkflowGenerator g, string forMode)
+        {
+            if (!g.UserInput.TryGet(T2IParamTypes.RefinerMethod, out _) || !g.UserInput.TryGet(T2IParamTypes.RefinerControl, out _))
+            {
+                return null;
+            }
+            if (!g.UserInput.TryGet(ComfyUIBackendExtension.RefinerPostProcessMode, out string mode) || (mode != forMode && mode != "both"))
+            {
+                return null;
+            }
+            if (g.CurrentMedia.DataType != WGNodeData.DT_IMAGE && g.CurrentMedia.DataType != WGNodeData.DT_LATENT_IMAGE)
+            {
+                return null;
+            }
+            string model = g.UserInput.Get(ComfyUIBackendExtension.RefinerPostProcessModel, "None");
+            if (model == "None")
+            {
+                throw new SwarmUserErrorException("Refiner Post Process Mode is enabled, but no Refiner Post Process Model is selected.");
+            }
+            return model;
+        }
+        AddStep(g =>
+        {
+            if (g.UserInput.Get(T2IParamTypes.RefinerMethod, "PostApply") != "PostApply")
+            {
+                return;
+            }
+            string model = getRefinerPostProcessModel(g, "before");
+            if (model is not null)
+            {
+                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model);
+            }
+        }, -4.2);
+        AddStep(g =>
+        {
+            string model = getRefinerPostProcessModel(g, "after");
+            if (model is not null)
+            {
+                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model);
+            }
+        }, 6);
+        #endregion
         #region Refiner
         AddStep(g =>
         {
