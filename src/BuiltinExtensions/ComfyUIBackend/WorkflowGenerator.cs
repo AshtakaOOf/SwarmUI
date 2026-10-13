@@ -3103,6 +3103,29 @@ public partial class WorkflowGenerator
         return result;
     }
 
+    /// <summary>If the upscale model is a NAFNet model, blends its output with the image it was given, as NAFNet models require. Otherwise returns the model output unchanged.</summary>
+    /// <param name="modelName">The upscale model's file name.</param>
+    public JArray NafnetCheck(string modelName, JArray modelOutput, JArray original)
+    {
+        if (!modelName.ToLowerFast().Contains("nafnet"))
+        {
+            return modelOutput;
+        }
+        // NAFNet necessary nodes, difference with blend factor of float -1.0 (since Comfy doesn't check it) as instructed on Huggingface at DraconicDragon/NAFNet-VAE-DeGrid
+        string blendFactorNode = CreateNode("PrimitiveFloat", new JObject()
+        {
+            ["value"] = -1.0
+        });
+        string blendedNode = CreateNode("ImageBlend", new JObject()
+        {
+            ["image1"] = modelOutput,
+            ["image2"] = original,
+            ["blend_factor"] = NodePath(blendFactorNode, 0),
+            ["blend_mode"] = "difference"
+        });
+        return NodePath(blendedNode, 0);
+    }
+
     /// <summary>Runs an image through an upscale model (eg 1x artifact-cleanup model for vae), scales content the same way as Refiner upscale. Has a check to only run on images.</summary>
     /// <param name="downscaleMethod">How to resize the result back to its original size, eg 'lanczos' or 'area'.</param>
     public WGNodeData CreateUpscaleModelPostProcess(WGNodeData media, WGNodeData vae, string modelName, string downscaleMethod = "lanczos")
@@ -3119,7 +3142,7 @@ public partial class WorkflowGenerator
             ["upscale_model"] = NodePath(loaderNode, 0),
             ["image"] = decoded.Path
         });
-        JArray upscaledImage = NodePath(upscaledNode, 0);
+        JArray upscaledImage = NafnetCheck(modelName, NodePath(upscaledNode, 0), decoded.Path);
         if (alphaMask is not null)
         {
             string joined = CreateNode("JoinImageWithAlpha", new JObject()

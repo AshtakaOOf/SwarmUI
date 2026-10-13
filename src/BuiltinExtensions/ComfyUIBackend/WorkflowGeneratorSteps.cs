@@ -1694,7 +1694,7 @@ public class WorkflowGeneratorSteps
                                 ["upscale_model"] = NodePath("27", 0),
                                 ["image"] = decoded.Path
                             }, "28");
-                            JArray upscaledImage = ["28", 0];
+                            JArray upscaledImage = g.NafnetCheck(upscaleMethod.After("model-"), ["28", 0], decoded.Path);
                             if (alphaMask is not null)
                             {
                                 string joined = g.CreateNode("JoinImageWithAlpha", new JObject()
@@ -2399,7 +2399,7 @@ public class WorkflowGeneratorSteps
                             ["upscale_model"] = NodePath(loaderNode, 0),
                             ["image"] = media.Path
                         });
-                        JArray upscaledImage = NodePath(upscaledNode, 0);
+                        JArray upscaledImage = g.NafnetCheck(method.After("model-"), NodePath(upscaledNode, 0), media.Path);
                         if (alphaMask is not null)
                         {
                             string joined = g.CreateNode("JoinImageWithAlpha", new JObject()
