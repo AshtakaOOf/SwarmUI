@@ -3104,7 +3104,8 @@ public partial class WorkflowGenerator
     }
 
     /// <summary>Runs an image through an upscale model (eg 1x artifact-cleanup model for vae), scales content the same way as Refiner upscale. Has a check to only run on images.</summary>
-    public WGNodeData CreateUpscaleModelPostProcess(WGNodeData media, WGNodeData vae, string modelName)
+    /// <param name="downscaleMethod">How to resize the result back to its original size, eg 'lanczos' or 'area'.</param>
+    public WGNodeData CreateUpscaleModelPostProcess(WGNodeData media, WGNodeData vae, string modelName, string downscaleMethod = "lanczos")
     {
         int width = media.Width ?? UserInput.GetImageWidth();
         int height = media.Height ?? UserInput.GetImageHeight();
@@ -3133,7 +3134,7 @@ public partial class WorkflowGenerator
             ["image"] = upscaledImage,
             ["width"] = width,
             ["height"] = height,
-            ["upscale_method"] = "lanczos",
+            ["upscale_method"] = downscaleMethod,
             ["crop"] = "disabled"
         });
         WGNodeData result = decoded.WithPath([scaledNode, 0], mayHaveAlpha: alphaMask is not null ? true : null);

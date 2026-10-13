@@ -611,7 +611,7 @@ public class ComfyUIBackendExtension : Extension
         }
     }
 
-    public static T2IRegisteredParam<string> CustomWorkflowParam, SamplerParam, SchedulerParam, RefinerSamplerParam, RefinerSchedulerParam, RefinerUpscaleMethod, RefinerPostProcessMode, RefinerPostProcessModel, UseIPAdapterForRevision, IPAdapterWeightType, VideoPreviewType, VideoFrameInterpolationMethod, GligenModel, YoloModelInternal, PreferredDType, UseStyleModel, TeaCacheMode, EasyCacheMode, SetClipDevice, ModelAttentionBackend, UseSparseAttention, SeedVRUpscaleMethod, SeedVRColorCorrectionBehavior, EnableReferenceLatents, TextEncodedImage;
+    public static T2IRegisteredParam<string> CustomWorkflowParam, SamplerParam, SchedulerParam, RefinerSamplerParam, RefinerSchedulerParam, RefinerUpscaleMethod, RefinerDownscaleMethod, RefinerPostProcessMode, RefinerPostProcessModel, UseIPAdapterForRevision, IPAdapterWeightType, VideoPreviewType, VideoFrameInterpolationMethod, GligenModel, YoloModelInternal, PreferredDType, UseStyleModel, TeaCacheMode, EasyCacheMode, SetClipDevice, ModelAttentionBackend, UseSparseAttention, SeedVRUpscaleMethod, SeedVRColorCorrectionBehavior, EnableReferenceLatents, TextEncodedImage;
 
     public static T2IRegisteredParam<bool> AITemplateParam, DebugRegionalPrompting, ShiftedLatentAverageInit, UseCfgZeroStar, UseTCFG, SeedVRSplitLatent;
 
@@ -785,7 +785,11 @@ public class ComfyUIBackendExtension : Extension
             "pixel-lanczos", Group: T2IParamTypes.GroupRefiners, OrderPriority: -1, FeatureFlag: "comfyui", ChangeWeight: 1,
             GetValues: (session) => [.. UpscalerModels, .. PidUpscaleModels(session)], DependNonDefault: T2IParamTypes.RefinerUpscale.Type.ID
             ));
-        RefinerPostProcessMode = T2IParamTypes.Register<string>(new("Refiner Post Process Mode", "Apply an upscaler model during any refiner stage. Useful for removing artifacts.\nOff is the default and does nothing.\nBefore Refiner runs the model before the Refiner upscale even happens.\nAfter Refiner runs the model after the image itself got generated, including segments.\nBoth runs before and after the Refiner.",
+        RefinerDownscaleMethod = T2IParamTypes.Register<string>(new("Refiner Downscale Method", "How to resize the output of an upscale model to the target resolution.\nOnly used when an upscale model runs during any Refiner option.\n'Lanczos' is sharp, but can add slight halos on high-contrast edges.\n'Area' averages pixels, giving a smoother result with no halos, the best downscaling method for patterns",
+            "lanczos", IgnoreIf: "lanczos", Group: T2IParamTypes.GroupRefiners, OrderPriority: -0.8, FeatureFlag: "comfyui", DoNotPreview: true, ChangeWeight: 1, IsAdvanced: true,
+            GetValues: (_) => ["lanczos///Lanczos", "area///Area"]
+            ));
+        RefinerPostProcessMode = T2IParamTypes.Register<string>(new("Refiner Post Process Mode", "Apply an upscaler model during any refiner stage. Useful for removing artifacts.\n'Off' is the default and does nothing.\n'Before Refiner' runs the model before the Refiner upscale even happens.\n'After Refiner' runs the model after the image itself got generated, including segments.\n'Both' runs before and after the Refiner.",
             "off", IgnoreIf: "off", Group: T2IParamTypes.GroupRefiners, OrderPriority: -0.5, FeatureFlag: "comfyui", DoNotPreview: true, ChangeWeight: 1,
             GetValues: (_) => ["off///Off", "before///Before Refiner", "after///After Refiner", "both///Both"]
             ));

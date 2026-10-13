@@ -1536,7 +1536,7 @@ public class WorkflowGeneratorSteps
             string model = getRefinerPostProcessModel(g, "before");
             if (model is not null)
             {
-                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model);
+                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model, g.UserInput.Get(ComfyUIBackendExtension.RefinerDownscaleMethod, "lanczos"));
             }
         }, -4.2);
         AddStep(g =>
@@ -1544,7 +1544,7 @@ public class WorkflowGeneratorSteps
             string model = getRefinerPostProcessModel(g, "after");
             if (model is not null)
             {
-                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model);
+                g.CurrentMedia = g.CreateUpscaleModelPostProcess(g.CurrentMedia, g.CurrentVae, model, g.UserInput.Get(ComfyUIBackendExtension.RefinerDownscaleMethod, "lanczos"));
             }
         }, 6);
         #endregion
@@ -1709,7 +1709,7 @@ public class WorkflowGeneratorSteps
                                 ["image"] = upscaledImage,
                                 ["width"] = width,
                                 ["height"] = height,
-                                ["upscale_method"] = "lanczos",
+                                ["upscale_method"] = g.UserInput.Get(ComfyUIBackendExtension.RefinerDownscaleMethod, "lanczos"),
                                 ["crop"] = "disabled"
                             }, "26");
                         }
